@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 import math
 
 class ContinuousQ():
-    def __init__(self, num_buckets, env = gym.make('CartPole-v1', render_mode="human")):
+    def __init__(self, num_buckets, env = gym.make('CartPole-v1')):
         self.env = env
 
-        self.epsilon = 1
+        self.epsilon = 0.8
         self.discount = 0.9
-        self.alpha = 0.1
+        self.alpha = 0.3
         
 
 
@@ -19,15 +19,14 @@ class ContinuousQ():
         self.low_space = np.array([env.observation_space.low[0], -5, env.observation_space.low[2], -5])
 
         self.bucket_size = (self.high_space - self.low_space)/DISCRETE_OS_SIZE
-
-        self.q_table = np.random.uniform(low=0, high=1, size=(DISCRETE_OS_SIZE + [env.action_space.n]))
+        self.q_table = np.random.uniform(low=-1, high=0, size=(DISCRETE_OS_SIZE + [env.action_space.n]))
        
 
     def policy(self, current_state):
         random_numb = random.uniform(0,1)
         directions = self.q_table[current_state]
 
-        if random_numb > self.epsilon:
+        if random_numb < self.epsilon:
             action = np.argmax(directions)
         else:
             action = random.choice([0,1])
@@ -35,16 +34,14 @@ class ContinuousQ():
             
     def state_to_tuple(self, array_state):
         indexed_state = (array_state - self.low_space)/self.bucket_size
-
         indexed_state = tuple(round(i) for i in indexed_state)
-        #print(indexed_state)
         return indexed_state
 
     def qUpdate(self, state, action, reward, next_state):
         maxQ = max(self.q_table[next_state])
-        print(reward)
+        print(self.q_table[state][action])
         self.q_table[state][action] = self.q_table[state][action]*(1-self.alpha) + self.alpha * (reward + self.discount*maxQ)
-
+        print(self.q_table[state][action])
     def episodeQ(self,max_steps):
         terminate = False
         step = 0
@@ -53,7 +50,7 @@ class ContinuousQ():
         observation, info = self.env.reset()
         state = self.state_to_tuple(observation)
         while not terminate and step < max_steps:
-
+            print(state)
             #Get a great action from policy
             action = self.policy(state)
 
@@ -73,22 +70,23 @@ class ContinuousQ():
         
             state = next_state
             
-            self.epsilon=self.epsilon*self.epsilon
+            #self.epsilon=self.epsilon*self.epsilon
             step += 1
         return bonus
 
 
     def trainQ(self,episodes):
         reward_over_time = []
-        for _ in range(episodes):
-            bonus = self.episodeQ(1000)
+        for i in range(episodes):
+            bonus = self.episodeQ(100)
             reward_over_time.append(bonus)
+            print(f"Episode {i}")
         self.env.close()
         return reward_over_time
 
-q = ContinuousQ(100,)
-x = list(range(0,1000))
-results_Q = q.trainQ(1000)
+q = ContinuousQ(20,)
+x = list(range(0,200))
+results_Q = q.trainQ(200)
 
 
 plt.plot(x, results_Q, color='r',label='Q Learning',linewidth=0.7)

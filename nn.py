@@ -165,41 +165,41 @@ def accuracy(training_output, test):
     return count/length
 
 
-train1 = genfromtxt('train1.csv', delimiter=',')
-train2 = genfromtxt('train2.csv', delimiter=',')
-test1 = genfromtxt('test1.csv', delimiter=',')
-test2 = genfromtxt('test2.csv', delimiter=',')
+# train1 = genfromtxt('train1.csv', delimiter=',')
+# train2 = genfromtxt('train2.csv', delimiter=',')
+# test1 = genfromtxt('test1.csv', delimiter=',')
+# test2 = genfromtxt('test2.csv', delimiter=',')
 
 
-#Dataset 1
-X_1 = train1[:, [0,1,2,3,4]]
-Y_1 = train1[:, [5,6]]
-X_test = test1[:, [0,1,2,3,4]]
-Y_test = test1[:, [5,6]]
-#print(Y_test)
-#Dataset 2
-X_2 = train2[:, [0,1,2,3,4]]
-Y_2 = train2[:, [5,6]]
-X_test_2 = test2[:, [0,1,2,3,4]]
-Y_test_2 = test2[:, [5,6]]
+# #Dataset 1
+# X_1 = train1[:, [0,1,2,3,4]]
+# Y_1 = train1[:, [5,6]]
+# X_test = test1[:, [0,1,2,3,4]]
+# Y_test = test1[:, [5,6]]
+# #print(Y_test)
+# #Dataset 2
+# X_2 = train2[:, [0,1,2,3,4]]
+# Y_2 = train2[:, [5,6]]
+# X_test_2 = test2[:, [0,1,2,3,4]]
+# Y_test_2 = test2[:, [5,6]]
 
-#Train Data Set 1
-params_values, error_history = train(X_1,Y_1, architecture, 1000,0.00005)
-#Generate Results Data Set 1
-results, params_values = forward_step(X_test,params_values,architecture) 
-results = np.transpose(results)
-print(results)
-#Print Results
-results = classify(results)
+# #Train Data Set 1
+# params_values, error_history = train(X_1,Y_1, architecture, 1000,0.00005)
+# #Generate Results Data Set 1
+# results, params_values = forward_step(X_test,params_values,architecture) 
+# results = np.transpose(results)
+# print(results)
+# #Print Results
+# results = classify(results)
 
 
-#Train Data Set 2
-params_values, error_history = train(X_2,Y_2, architecture, 1000,0.15)
-#Generate Results Data Set 2
-results, params_values = forward_step(X_test_2,params_values,architecture) 
-results = np.transpose(results)
-#Print Results
-#print(results)
+# #Train Data Set 2
+# params_values, error_history = train(X_2,Y_2, architecture, 1000,0.15)
+# #Generate Results Data Set 2
+# results, params_values = forward_step(X_test_2,params_values,architecture) 
+# results = np.transpose(results)
+# #Print Results
+# #print(results)
 
 
 

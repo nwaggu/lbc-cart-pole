@@ -1,7 +1,7 @@
 import numpy as np 
 import gymnasium as gym
 import random
-import matplotlib.pyplot as plt
+
 import math
 import nn
 from statistics import mean 
@@ -22,11 +22,12 @@ def softmax(x):
     return np.exp(x) / np.sum(np.exp(x), axis=0)
 
 class EvolutionaryNN():
-    def __init__(self, pop_size, env = gym.make('CartPole-v1', render_mode='human')):
-        self.env = env
+    def __init__(self, pop_size):
+        
         self.population = [nn.init_layers(architecture) for i in range(pop_size)]
         self.fitness = [0.0]*pop_size
         self.unwrapped = []
+        self.epsilon = 0.9
 
     def init_values(self):
         for i in range(len(self.population)):
@@ -37,17 +38,12 @@ class EvolutionaryNN():
 
 
     def unwrap(self, params_values):
-        print(params_values)
         wrapping = np.array([])
         for key in params_values.keys():
             if 'w' in key or 'b' in key:
-                item = params_values[key]
-                print(key)
-                print(item.shape)
-                
+                item = params_values[key]        
                 unwrapped_value = np.ndarray.flatten(item)
-                np.concatenate((wrapping, unwrapped_value)) 
-        print("Done unwrap")
+                wrapping = np.concatenate((wrapping, unwrapped_value)) 
         return wrapping
 
 
@@ -57,38 +53,52 @@ class EvolutionaryNN():
         father_gene = self.unwrapped[father_index]
 
         gene_length = len(mother_gene)
-        cut_index = random.randint(0,gene_length-1)
-        child = mother_gene[:cut_index] + father_gene[cut_index:]
+
+        cut_index = random.randint(0,gene_length-2)
+
+        child = np.concatenate([mother_gene[:cut_index],father_gene[cut_index:]])
         assert len(child) == len(father_gene)
         return child
 
 
     def rewrap(self, unwrapped_child):
-        unpacked_params = []                                    
-        e = 0
         params_value = {}
         params_value['w1'] = unwrapped_child[:32].reshape(8,4)
         params_value['b1'] = unwrapped_child[32:40].reshape(8,1)
         params_value['w2'] = unwrapped_child[40:56].reshape(2,8)
         params_value['b2'] = unwrapped_child[56:58].reshape(2,1)
+        return params_value
 
+
+    def mutate(self, child_gene, num_mutations):
+        for i in range(num_mutations):
+            random_pos = random.randint(0,len(child_gene)-1)
+            add = random.randint(0,1)
+            difference = random.uniform(0,0.5)
+            if add:
+                child_gene[random_pos]+=difference
+            else:
+                child_gene[random_pos]-=difference
+        return child_gene
+    
+
+    def new_population(self):
+        probability = random.random()
+        best_index = np.argmax(self.fitness) if probability > self.epsilon else random.randint(0,len(self.fitness)-1)
+        second_best = best_index = np.argmax(self.fitness) if probability > self.epsilon else random.randint(0,len(self.fitness)-1)
+        while second_best == best_index:
+            second_best = random.randint(0,len(self.fitness)-1)
+        child_gene = self.crossover(best_index, second_best)
+        child_gene = self.mutate(child_gene, 10)
+        child_params = self.rewrap(child_gene)
+        child_fitness = self.evaluate_fitness(child_params)
+        if min(self.fitness) < child_fitness:
+            i = np.argmin(self.fitness)
+            self.fitness[i] = child_fitness
+            self.population[i] = child_params
+            self.unwrapped[i] = child_gene
         
-        #    bias = params[s:e]
-        #    unpacked_params.extend([weights,bias])              
-        #return unpacked_params
-
-
-
-# architecture = [
-#         {"input_dim": 4, "output_dim": 32, "activation": "relu"},
-#     # {"input_dim": 4, "output_dim": 6, "activation": "relu"},
-#     # {"input_dim": 6, "output_dim": 6, "activation": "relu"},
-#     # {"input_dim": 6, "output_dim": 4, "activation": "relu"},
-#         {"input_dim": 32, "output_dim": 2, "activation": "sigmoid"},
-#     ]
-
-
-
+        
 
 
     def chooseAction(self, state, params_value):
@@ -101,23 +111,19 @@ class EvolutionaryNN():
         rewards = self.runSprint(1, agent)
         return mean(rewards)
 
-
-
     def episode(self,max_steps, agent):
         terminate = False
         step = 0
         episode_rewards = 0
-        self.env.reset()
         observation, info = self.env.reset()
         state = observation
         while not terminate and step < max_steps:
-            
             #Get a great action from policy
             action = self.chooseAction(state, agent)
             #Get next state and reward
             next_state, reward, terminate, _, _ = self.env.step(action)
             #Draw State
-            self.env.render()
+            #self.env.render()
             if terminate:
                 continue
             if reward==1:
@@ -135,10 +141,23 @@ class EvolutionaryNN():
     def runSprint(self,episodes, agent):
         reward_over_time = []
         for _ in range(episodes):
-            bonus = self.episode(100, agent)
+            bonus = self.episode(1000, agent)
             reward_over_time.append(bonus)
         self.env.close()
         return reward_over_time
 
+
+    def iterateGenerations(self, num):
+        self.env = gym.make('CartPole-v1')
+        self.init_values()
+    
+        print("Average Fitness:", mean(self.fitness))
+        for i in range(num):
+            print(f"Generation {i}")
+            self.new_population()
+            print("Average Fitness:", mean(self.fitness))
+            if mean(self.fitness)==1000:
+                break
+
 x = EvolutionaryNN(5)
-x.init_values()
+x.iterateGenerations(10000)
