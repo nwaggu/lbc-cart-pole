@@ -3,6 +3,7 @@ import gymnasium as gym
 import random
 import matplotlib.pyplot as plt
 import math
+from scipy.signal import lfilter
 
 class ContinuousQ():
     def __init__(self, num_buckets, env = gym.make('CartPole-v1')):
@@ -10,16 +11,16 @@ class ContinuousQ():
 
         self.epsilon = 0.8
         self.discount = 0.9
-        self.alpha = 0.3
+        self.alpha = 0.1
         
 
 
-        DISCRETE_OS_SIZE = [num_buckets]*4
+        buckets = [num_buckets]*4
         self.high_space = np.array([env.observation_space.high[0], 5, env.observation_space.high[2], 5])
         self.low_space = np.array([env.observation_space.low[0], -5, env.observation_space.low[2], -5])
 
-        self.bucket_size = (self.high_space - self.low_space)/DISCRETE_OS_SIZE
-        self.q_table = np.random.uniform(low=-1, high=0, size=(DISCRETE_OS_SIZE + [env.action_space.n]))
+        self.bucket_size = (self.high_space - self.low_space)/buckets
+        self.q_table = np.random.uniform(low=-1, high=0, size=(buckets + [env.action_space.n]))
        
 
     def policy(self, current_state):
@@ -39,9 +40,8 @@ class ContinuousQ():
 
     def qUpdate(self, state, action, reward, next_state):
         maxQ = max(self.q_table[next_state])
-        print(self.q_table[state][action])
         self.q_table[state][action] = self.q_table[state][action]*(1-self.alpha) + self.alpha * (reward + self.discount*maxQ)
-        print(self.q_table[state][action])
+
     def episodeQ(self,max_steps):
         terminate = False
         step = 0
@@ -50,7 +50,7 @@ class ContinuousQ():
         observation, info = self.env.reset()
         state = self.state_to_tuple(observation)
         while not terminate and step < max_steps:
-            print(state)
+            #print(state)
             #Get a great action from policy
             action = self.policy(state)
 
@@ -81,15 +81,20 @@ class ContinuousQ():
             bonus = self.episodeQ(100)
             reward_over_time.append(bonus)
             print(f"Episode {i}")
+            print("Rewards: ", bonus)
         self.env.close()
         return reward_over_time
 
 q = ContinuousQ(20,)
-x = list(range(0,200))
-results_Q = q.trainQ(200)
+x = list(range(0,10000))
+results_Q = q.trainQ(10000)
 
+n = 15  
+b = [1.0 / n] * n
+a = 1
+yy = lfilter(b, a, results_Q)
 
-plt.plot(x, results_Q, color='r',label='Q Learning',linewidth=0.7)
+plt.plot(x, yy, color='r',label='Q Learning', linewidth=0.8)
 
 plt.title("Q Learning Rewards")
 plt.xlabel("Episode #") 

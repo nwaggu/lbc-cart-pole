@@ -1,7 +1,7 @@
 import numpy as np 
 import gymnasium as gym
 import random
-
+import matplotlib.pyplot as plt
 import math
 import nn
 from statistics import mean 
@@ -141,23 +141,36 @@ class EvolutionaryNN():
     def runSprint(self,episodes, agent):
         reward_over_time = []
         for _ in range(episodes):
-            bonus = self.episode(1000, agent)
+            bonus = self.episode(100, agent)
             reward_over_time.append(bonus)
         self.env.close()
         return reward_over_time
 
 
     def iterateGenerations(self, num):
+        rewards_over_time = []
         self.env = gym.make('CartPole-v1')
         self.init_values()
-    
+
         print("Average Fitness:", mean(self.fitness))
         for i in range(num):
             print(f"Generation {i}")
             self.new_population()
             print("Average Fitness:", mean(self.fitness))
-            if mean(self.fitness)==1000:
-                break
+            print("Best Fitness:", self.fitness[np.argmax(self.fitness)])
+            rewards_over_time.append(mean(self.fitness))
+            #rewards_over_time.append(self.fitness[np.argmax(self.fitness)])
+            #if mean(self.fitness)==100:
+            #    break
+        return rewards_over_time
 
-x = EvolutionaryNN(5)
-x.iterateGenerations(10000)
+x = EvolutionaryNN(20)
+results_Q = x.iterateGenerations(100)
+t = list(range(0,100))
+plt.plot(t, results_Q, color='b')
+
+plt.title("Evolutionary Neural Network")
+plt.xlabel("Generation #") 
+plt.ylabel("Average Reward Per Generation") 
+plt.legend()
+plt.show()
